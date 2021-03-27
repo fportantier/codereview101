@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Security Code Review 101</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-sanitize/1.7.8/angular-sanitize.min.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/9.0.0/markdown-it.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/highlight.min.js" crossorigin="anonymous"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/enc-base64.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/sha256.min.js" crossorigin="anonymous"></script>
+
+
+  <script src="codeReview101Ctrl.js"></script>
+  
+  
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/styles/darcula.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css" crossorigin="anonymous">
+
+</head>
+
+<body style="margin-top: 4rem;" class="bg-secondary" ng-app="codeReview101" ng-controller="codeReview101Ctrl">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="#">
+    Secure Coding Dojo
+    </a>
+    <ul class="navbar-nav mr-auto">
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Code Review Categories 
+            </a>
+            <ul class="dropdown-menu">
+                <li ng-repeat="def in definitions"><a class="dropdown-item" ng-href="#{{def.categoryId}}">{{def.categoryName}}</a></li>
+            </ul>
+        </li>
+    </ul>
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link" href="https://github.com/trendmicro/SecureCodingDojo">
+            <img src="GitHub-Mark-Light-32px.png" alt="GitHub"></img></a>
+        </li>
+    </ul>
+</nav>
+
+<div class="alert alert-danger" ng-if="errorMessage">
+        <a class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        {{errorMessage}}
+</div>
+<div class="container-fluid"> 
+    <div class="jumbotron" style="padding:2rem">
+        <div class="row">
+            <div class="col">
+                <h1 class="display-4">Hello, coder!</h1>
+                <p class="lead">Want to test your ability to identify security issues during code review? 
+                    Welcome to <u>Security Code Review 101</u>!</p>
+        
+                <hr class="my-4">
+                <p>
+                Take a look at the examples below and choose between the good and the bad!</p>
+            </div>
+            <div class="col-sm-4">
+                <img src="codereview.png" class="rounded float-right img-fluid" alt="Two different code snapshots">
+            </div>
+        </div>
+    
+    </div>  
+    
+    <div id="{{def.categoryId}}" class="card mb-3 bg-light" ng-repeat="def in definitions">
+        <div class="card-header">
+            {{def.categoryName}}
+            <span class="oi oi-check float-right" ng-if="def.passed"></span>
+        </div>
+        <div class="card-body">
+            <p class="card-text" markdown-it ng-include="def.categoryDetails"></p>
+            <span ng-repeat="q in def.questions">
+                <hr>
+                <p class="card-text"><u>Q{{$index+1}}: {{q.question}}</u></p>
+                <div class="row">
+                    <div class="col-6" ng-repeat="s in q.snippets">
+                        <!--CODE SNIPPETS-->
+                        <pre class="{{q.language}}"><code style="cursor: pointer" highlight-code snippet="{{s}}"></code></pre>
+                        
+                    </div>
+                </div>
+                <div class="alert alert-danger" ng-if="q.correct===false">
+                        {{q.incorrectReasoning}}
+                </div>
+                <div class="alert alert-success" ng-if="q.correct===true">
+                        {{q.correctReasoning}}
+                </div>
+            </span>
+
+            <form autocomplete="off" ng-if="def.passed && fromPortal" class="w-50 m-4">
+                <h3>Congratulations!!!</h3>
+                <p>You solved the category. Go to the training portal site and click the corresponding submit code button. 
+                You will be given a salt which you can enter below. Then provide the resulting code on the training portal site.</p>
+                <div class="form-group">
+                    <label for="salt_{{def.categoryId}}">Salt:</label>
+                    <input type="text" class="form-control" class="m-2" id="salt_{{def.categoryId}}" name="salt_{{def.categoryId}}">
+                </div>
+                <button type="button" class="btn btn-success" ng-click="getCode(def.categoryId)">Get Code</button>
+                <br><br>
+                <div class="alert alert-info form-group" style="display:none" id="codeDiv_{{def.categoryId}}">
+                    <label for="code_{{def.categoryId}}">The code is:</label>
+                    <input type="text" class="form-control" id="code_{{def.categoryId}}" value=""/>
+                    <button type="button" class="btn btn-default" ng-click="copyCode(def.categoryId)">
+                        <span class="oi oi-clipboard"></span>
+                    </button>
+                </div>             
+            </form>
+
+        </div>
+    </div>
+</div>
+<br><br><br><br>
+<div id="finalModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Challenges Complete</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+
+                <div class="col-5">
+                    <img src="passed.png" class="img-fluid"/>
+                </div>
+                <div class="col-7">
+                    <h3>Congratulations!</h1>
+                    <p>You have successfully demonstrated that you can identify basic security flaws through code review.</p>
+                </div>  
+
+            </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+</div>
+</body>
+</html>
